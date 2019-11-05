@@ -5,6 +5,10 @@ var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 var cors = require('cors');
 
+var pg = require('./config/pg');
+var session = require('express-session');
+var pgSession = require('connect-pg-simple')(session);
+
 var routesRouter = require('./routes/routes');
 var tripsRouter = require('./routes/trips');
 var journeysRouter = require('./routes/journeys');
@@ -19,6 +23,17 @@ app.use(cors({origin:['http://localhost:4200', 'https://console.gopamoja.com'], 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
+
+app.use(session({
+  store: new pgSession({
+    pool : pg,
+    tableName : 'sessions'
+  }),
+  secret: "hellogopamoja!",
+  resave: false,
+  cookie: { maxAge: 30 * 24 * 60 * 60 * 1000},
+  saveUninitialized: false
+}));
 
 app.use(logger('dev'));
 app.use(express.json());
