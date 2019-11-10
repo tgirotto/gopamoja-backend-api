@@ -2,15 +2,64 @@ const pg = require('../config/pg');
 const Router = require('express-promise-router');
 
 const VehicleService = require('../services/VehicleService');
+const CompanyService = require('../services/CompanyService');
+const UserService = require('../services/UserService');
 
 const router = new Router()
 
 router.get('/', async function(req, res, next) {
+  if(!req.session.user_id) {
+    res.status(401).json({err: 'Not Authorised.'});
+    return;
+  }
+
+  let companyId;
+
+  if(req.query.company_id != null) {
+    companyId = parseInt(req.query.company_id);
+
+    if(isNaN(companyId)) {
+      res.status(500).json({err: "Invalid company id"});
+      return;
+    }
+  }
+
   try {
-    const vehicles = await VehicleService.findByCompanyId(1);
-    res.json({
-      vehicles: vehicles
-    })
+    let user = await UserService.findById(req.session.user_id);
+
+    if(user == null || user.role == null) {
+      throw "User or user role not defined";
+    }
+
+    if(user.role === 'admin') {
+      let vehicles;
+
+      if(companyId == null) {
+        vehicles = await VehicleService.findByDeleted(false);
+      } else {
+        vehicles = await VehicleService.findByCompanyIdAndDeleted(companyId, false);
+      }
+
+      res.json({
+        vehicles: vehicles
+      })
+      return;
+    }
+
+    if(user.role === 'third_party') {
+      let company = await CompanyService.findByUserId(req.session.user_id);
+
+      if(company == null) {
+        throw "This user does not belong to any company";
+      }
+
+      let vehicles = await VehicleService.findByCompanyIdAndDeleted(companyId, false);
+
+      res.json({
+        vehicles: vehicles
+      })
+      return;
+    }
   } catch(e) {
     console.log(e);
     res.status(500).json({err: e.toString()});

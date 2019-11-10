@@ -1,22 +1,35 @@
 const pg = require('../config/pg');
 
 const VehicleService = {
-  findAll: async () => {
+  findByDeleted: async (deleted) => {
     const client = await pg.connect()
     let result;
+
+    if(typeof deleted !== 'boolean') {
+      throw "Invalid deleted"
+    }
 
     try {
       await client.query('BEGIN')
 
-      let q0 = `select * from vehicles`;
+      let q0 = `select vehicles.id as id, \
+        vehicles.brand as brand, \
+        vehicles.name as name, \
+        vehicles.rows * vehicles.columns as capacity, \
+        companies.id as company_id, \
+        companies.name as company_name \
+        from vehicles \
+        left join companies on vehicles.company_id = companies.id \
+        where deleted = $1`;
 
-      result = await client.query(q0);
+      result = await client.query(q0, [deleted]);
 
       if(result == null || result.rows == null) {
         throw "Vehicles get did not return any result";
       }
 
       await client.query('COMMIT')
+      console.log(result.rows);
 
       return new Promise((resolve, reject) => {
         resolve(result.rows);
@@ -29,9 +42,13 @@ const VehicleService = {
       client.release()
     }
   },
-  findByCompanyId: async (companyId) => {
+  findByCompanyIdAndDeleted: async (companyId, deleted) => {
     if(isNaN(companyId)) {
       throw "Invalid company id"
+    }
+
+    if(typeof deleted !== 'boolean') {
+      throw "Invalid deleted"
     }
 
     const client = await pg.connect()
@@ -40,9 +57,17 @@ const VehicleService = {
     try {
       await client.query('BEGIN')
 
-      let q0 = `select * from vehicles where company_id = $1`;
+      let q0 = `select vehicles.id as id, \
+        vehicles.brand as brand, \
+        vehicles.name as name, \
+        vehicles.rows * vehicles.columns as capacity, \
+        companies.id as company_id, \
+        companies.name as company_name \
+        from vehicles \
+        left join companies on vehicles.company_id = companies.id \
+        where company_id = $1 and vehicles.deleted = $2`;
 
-      result = await client.query(q0, [companyId]);
+      result = await client.query(q0, [companyId, deleted]);
 
       if(result == null || result.rows == null) {
         throw "Vehicles get did not return any result";

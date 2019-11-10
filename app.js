@@ -16,6 +16,8 @@ var vehiclesRouter = require('./routes/vehicles');
 var bookingsRouter = require('./routes/bookings');
 var stopsRouter = require('./routes/stops');
 var insightsRouter = require('./routes/insights');
+var companiesRouter = require('./routes/companies');
+var ticketRequestsRouter = require('./routes/ticket_requests');
 
 var app = express();
 app.use(cors({origin:['http://localhost:4200', 'https://console.gopamoja.com'], credentials: true}));
@@ -48,6 +50,8 @@ app.use('/bookings', bookingsRouter);
 app.use('/vehicles', vehiclesRouter);
 app.use('/stops', stopsRouter);
 app.use('/insights', insightsRouter);
+app.use('/companies', companiesRouter);
+app.use('/ticket_requests', ticketRequestsRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
