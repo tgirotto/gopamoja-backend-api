@@ -21,21 +21,20 @@ var ticketRequestsRouter = require('./routes/ticket_requests');
 
 var app = express();
 app.use(cors({origin:['http://localhost:4200', 'https://admin.gopamoja.com', 'https://test.admin.gopamoja.com'], credentials: true}));
-
-// view engine setup
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'ejs');
-
 app.use(session({
   store: new pgSession({
-    pool : pg,
+    pool : pg.pool,
     tableName : 'sessions'
   }),
   secret: "hellogopamoja!",
   resave: false,
-  cookie: { maxAge: 30 * 24 * 60 * 60 * 1000, secure: false},
+  cookie: { maxAge: 30 * 24 * 60 * 60 * 1000},
   saveUninitialized: false
 }));
+
+// view engine setup
+app.set('views', path.join(__dirname, 'views'));
+app.set('view engine', 'ejs');
 
 app.use(logger('dev'));
 app.use(express.json());
