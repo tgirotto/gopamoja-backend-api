@@ -26,7 +26,7 @@ app.use(session({
     pool : pg,
     tableName : 'sessions'
   }),
-  secret: "gopamoja!",
+  secret: "hellogopamoja",
   resave: false,
   cookie: { maxAge: 30 * 24 * 60 * 60 * 1000},
   saveUninitialized: false
