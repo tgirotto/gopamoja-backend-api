@@ -20,7 +20,7 @@ var companiesRouter = require('./routes/companies');
 var ticketRequestsRouter = require('./routes/ticket_requests');
 
 var app = express();
-app.use(cors({origin:['http://localhost:4200', 'https://console.gopamoja.com'], credentials: true}));
+app.use(cors({origin:['http://localhost:4200', 'https://admin.gopamoja.com', 'https://test.admin.gopamoja.com'], credentials: true}));
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
