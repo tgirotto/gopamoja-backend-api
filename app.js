@@ -23,7 +23,7 @@ var app = express();
 app.use(cors({origin:['http://localhost:4200', 'https://admin.gopamoja.com', 'https://test.admin.gopamoja.com'], credentials: true}));
 app.use(session({
   store: new pgSession({
-    pool : pg.pool,
+    pool : pg,
     tableName : 'sessions'
   }),
   secret: "hellogopamoja!",
