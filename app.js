@@ -33,7 +33,7 @@ app.use(session({
   }),
   secret: "hellogopamoja!",
   resave: false,
-  cookie: { maxAge: 30 * 24 * 60 * 60 * 1000},
+  cookie: { maxAge: 30 * 24 * 60 * 60 * 1000, secure: false},
   saveUninitialized: false
 }));
 
