@@ -137,6 +137,7 @@ router.post('/', async function(req, res, next) {
 });
 
 router.put('/:id', async function(req, res, next) {
+  const companyId = parseInt(req.body.company_id);
   const vehicleId = parseInt(req.params.id)
   const name = req.body.name;
   const description = req.body.description;
@@ -145,6 +146,11 @@ router.put('/:id', async function(req, res, next) {
   const columns = parseInt(req.body.columns);
   const wifi = (req.body.wifi == 'true');
   const ac = (req.body.ac == 'true');
+
+  if(isNaN(companyId)) {
+    res.status(500).json({err: 'Company id is invalid'});
+    return;
+  }
 
   if(isNaN(vehicleId)) {
     res.status(500).json({err: 'Vehicle id is invalid'});
@@ -177,7 +183,7 @@ router.put('/:id', async function(req, res, next) {
   }
 
   try {
-    const vehicle = await VehicleService.updateOne(vehicleId, name, description, brand, wifi, ac, rows, columns, 1);
+    const vehicle = await VehicleService.updateOne(vehicleId, name, description, brand, wifi, ac, rows, columns, companyId);
     res.json({
       vehicle: vehicle
     })
