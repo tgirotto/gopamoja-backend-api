@@ -86,6 +86,7 @@ router.get('/:id', async function(req, res, next) {
 });
 
 router.post('/', async function(req, res, next) {
+  const companyId = parseInt(req.body.company_id);
   const name = req.body.name;
   const description = req.body.description;
   const brand = req.body.brand;
@@ -93,6 +94,11 @@ router.post('/', async function(req, res, next) {
   const ac = (req.body.ac == 'true');
   const rows = parseInt(req.body.rows);
   const columns = parseInt(req.body.columns);
+
+  if(isNaN(companyId)) {
+    res.status(500).json({err: 'Company id is invalid'});
+    return;
+  }
 
   if(isNaN(rows)) {
     res.status(500).json({err: 'Rows is invalid'});
@@ -120,7 +126,7 @@ router.post('/', async function(req, res, next) {
   }
 
   try {
-    const vehicle = await VehicleService.insertOne(name, description, brand, wifi, ac, rows, columns, 1);
+    const vehicle = await VehicleService.insertOne(name, description, brand, wifi, ac, rows, columns, companyId);
     res.json({
       vehicle: vehicle
     })
@@ -137,8 +143,6 @@ router.put('/:id', async function(req, res, next) {
   const brand = req.body.brand;
   const rows = parseInt(req.body.rows);
   const columns = parseInt(req.body.columns);
-  console.log(req.body.wifi);
-  console.log(req.body.ac);
   const wifi = (req.body.wifi == 'true');
   const ac = (req.body.ac == 'true');
 
