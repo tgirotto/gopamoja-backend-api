@@ -131,9 +131,6 @@ router.put('/:id', async function(req, res, next) {
   const brand = req.body.brand;
   const rows = parseInt(req.body.rows);
   const columns = parseInt(req.body.columns);
-  const wifi = (req.body.wifi == 'true');
-  const ac = (req.body.ac == 'true');
-  const toilet = (req.body.toilet == 'true');
 
   if(isNaN(companyId)) {
     res.status(500).json({err: 'Company id is invalid'});
@@ -157,6 +154,21 @@ router.put('/:id', async function(req, res, next) {
 
   if(typeof brand !== 'string') {
     res.status(500).json({err: 'Brand is invalid'});
+    return;
+  }
+
+  if(typeof ac !== 'boolean') {
+    res.status(500).json({err: 'Brand is invalid'});
+    return;
+  }
+
+  if(typeof wifi !== 'boolean') {
+    res.status(500).json({err: 'wifi is invalid'});
+    return;
+  }
+
+  if(typeof toilet !== 'boolean') {
+    res.status(500).json({err: 'toilet is invalid'});
     return;
   }
 
