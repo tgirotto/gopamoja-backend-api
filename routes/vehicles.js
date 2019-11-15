@@ -88,9 +88,6 @@ router.get('/:id', async function(req, res, next) {
 router.post('/', async function(req, res, next) {
   const companyId = parseInt(req.body.company_id);
   const brand = req.body.brand;
-  const wifi = (req.body.wifi == 'true');
-  const ac = (req.body.ac == 'true');
-  const toilet = (req.body.toilet == 'true');
   const rows = parseInt(req.body.rows);
   const columns = parseInt(req.body.columns);
 
@@ -113,6 +110,22 @@ router.post('/', async function(req, res, next) {
     res.status(500).json({err: 'Brand is invalid'});
     return;
   }
+
+  if(typeof ac !== 'boolean') {
+    res.status(500).json({err: 'Brand is invalid'});
+    return;
+  }
+
+  if(typeof wifi !== 'boolean') {
+    res.status(500).json({err: 'wifi is invalid'});
+    return;
+  }
+
+  if(typeof toilet !== 'boolean') {
+    res.status(500).json({err: 'toilet is invalid'});
+    return;
+  }
+
 
   try {
     const vehicle = await VehicleService.insertOne(brand, wifi, ac, toilet, rows, columns, companyId);
