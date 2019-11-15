@@ -206,16 +206,8 @@ const VehicleService = {
       throw "Invalid company id"
     }
 
-    if(typeof name !== 'string') {
-      throw "Invalid name"
-    }
-
     if(typeof brand !== 'string') {
       throw "Invalid brand"
-    }
-
-    if(typeof description !== 'string') {
-      throw "Invalid description"
     }
 
     if(typeof wifi !== 'boolean') {
