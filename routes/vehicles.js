@@ -87,11 +87,10 @@ router.get('/:id', async function(req, res, next) {
 
 router.post('/', async function(req, res, next) {
   const companyId = parseInt(req.body.company_id);
-  const name = req.body.name;
-  const description = req.body.description;
   const brand = req.body.brand;
   const wifi = (req.body.wifi == 'true');
   const ac = (req.body.ac == 'true');
+  const toilet = (req.body.toilet == 'true');
   const rows = parseInt(req.body.rows);
   const columns = parseInt(req.body.columns);
 
@@ -110,23 +109,13 @@ router.post('/', async function(req, res, next) {
     return;
   }
 
-  if(typeof name !== 'string') {
-    res.status(500).json({err: 'Name is invalid'});
-    return;
-  }
-
   if(typeof brand !== 'string') {
     res.status(500).json({err: 'Brand is invalid'});
     return;
   }
 
-  if(typeof description !== 'string') {
-    res.status(500).json({err: 'Description is invalid'});
-    return;
-  }
-
   try {
-    const vehicle = await VehicleService.insertOne(name, description, brand, wifi, ac, rows, columns, companyId);
+    const vehicle = await VehicleService.insertOne(brand, wifi, ac, toilet, rows, columns, companyId);
     res.json({
       vehicle: vehicle
     })
@@ -139,13 +128,12 @@ router.post('/', async function(req, res, next) {
 router.put('/:id', async function(req, res, next) {
   const companyId = parseInt(req.body.company_id);
   const vehicleId = parseInt(req.params.id)
-  const name = req.body.name;
-  const description = req.body.description;
   const brand = req.body.brand;
   const rows = parseInt(req.body.rows);
   const columns = parseInt(req.body.columns);
   const wifi = (req.body.wifi == 'true');
   const ac = (req.body.ac == 'true');
+  const toilet = (req.body.toilet == 'true');
 
   if(isNaN(companyId)) {
     res.status(500).json({err: 'Company id is invalid'});
@@ -167,23 +155,13 @@ router.put('/:id', async function(req, res, next) {
     return;
   }
 
-  if(typeof name !== 'string') {
-    res.status(500).json({err: 'Name is invalid'});
-    return;
-  }
-
   if(typeof brand !== 'string') {
     res.status(500).json({err: 'Brand is invalid'});
     return;
   }
 
-  if(typeof description !== 'string') {
-    res.status(500).json({err: 'Description is invalid'});
-    return;
-  }
-
   try {
-    const vehicle = await VehicleService.updateOne(vehicleId, name, description, brand, wifi, ac, rows, columns, companyId);
+    const vehicle = await VehicleService.updateOne(vehicleId, brand, wifi, ac, toilet, rows, columns, companyId);
     res.json({
       vehicle: vehicle
     })

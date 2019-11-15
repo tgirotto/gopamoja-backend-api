@@ -14,7 +14,6 @@ const VehicleService = {
 
       let q0 = `select vehicles.id as id, \
         vehicles.brand as brand, \
-        vehicles.name as name, \
         vehicles.rows * vehicles.columns as capacity, \
         companies.id as company_id, \
         companies.name as company_name \
@@ -29,7 +28,6 @@ const VehicleService = {
       }
 
       await client.query('COMMIT')
-      console.log(result.rows);
 
       return new Promise((resolve, reject) => {
         resolve(result.rows);
@@ -59,7 +57,6 @@ const VehicleService = {
 
       let q0 = `select vehicles.id as id, \
         vehicles.brand as brand, \
-        vehicles.name as name, \
         vehicles.rows * vehicles.columns as capacity, \
         companies.id as company_id, \
         companies.name as company_name \
@@ -120,7 +117,7 @@ const VehicleService = {
       client.release()
     }
   },
-  insertOne: async (name, description, brand, wifi, ac, rows, columns, companyId) => {
+  insertOne: async (brand, wifi, ac, rows, columns, companyId) => {
     if(isNaN(companyId)) {
       throw "Invalid company id"
     }
@@ -133,16 +130,8 @@ const VehicleService = {
       throw "Invalid columns"
     }
 
-    if(typeof name !== 'string') {
-      throw "Invalid name"
-    }
-
     if(typeof brand !== 'string') {
       throw "Invalid brand"
-    }
-
-    if(typeof description !== 'string') {
-      throw "Invalid description"
     }
 
     if(typeof wifi !== 'boolean') {
@@ -153,13 +142,17 @@ const VehicleService = {
       throw "Invalid ac"
     }
 
+    if(typeof toilet !== 'boolean') {
+      throw "Invalid toilet"
+    }
+
     const client = await pg.connect()
     let result;
 
     try {
       await client.query('BEGIN')
 
-      let q0 = `insert into vehicles(name, description, brand, wifi, ac, rows, columns, layout, company_id) values ($1, $2, $3, $4, $5, $6, $7, $8, $9) returning *`;
+      let q0 = `insert into vehicles(brand, wifi, ac, toilet, rows, columns, layout, company_id) values ($1, $2, $3, $4, $5, $6, $7, $8) returning *`;
 
       let seats = [];
       for(let r = 0; r < rows; r++) {
@@ -173,7 +166,7 @@ const VehicleService = {
       }
 
       const layout = JSON.stringify(seats);
-      result = await client.query(q0, [name, description, brand, wifi, ac, rows, columns, layout, companyId]);
+      result = await client.query(q0, [brand, wifi, ac, toilet, rows, columns, layout, companyId]);
 
       if(result == null || result.rows == null) {
         throw "Vehicles insert did not return any result";
@@ -196,7 +189,7 @@ const VehicleService = {
       client.release()
     }
   },
-  updateOne: async (vehicleId, name, description, brand, wifi, ac, rows, columns, companyId) => {
+  updateOne: async (vehicleId, brand, wifi, ac, toilet, rows, columns, companyId) => {
     if(isNaN(vehicleId)) {
       throw "Invalid vehicle id"
     }
@@ -233,22 +226,26 @@ const VehicleService = {
       throw "Invalid ac"
     }
 
+    if(typeof toilet !== 'boolean') {
+      throw "Invalid toilet"
+    }
+
     const client = await pg.connect()
     let result;
 
     try {
       await client.query('BEGIN')
 
-      let q0 = `update vehicles set name = $1, \
-       description = $2, \
-       brand = $3, \
-       wifi = $4, \
-       ac = $5, \
-       rows = $6, \
-       columns = $7, \
-       layout = $8, \
-       company_id= $9 \
-       where id = $10
+      let q0 = `update vehicles set \
+       brand = $1, \
+       wifi = $2, \
+       ac = $3, \
+       toilet = $4, \
+       rows = $5, \
+       columns = $6, \
+       layout = $7, \
+       company_id= $8 \
+       where id = $9
        returning *`;
 
       let seats = [];
@@ -264,7 +261,7 @@ const VehicleService = {
 
       const layout = JSON.stringify(seats);
 
-      result = await client.query(q0, [name, description, brand, wifi, ac, rows, columns, layout, companyId, vehicleId]);
+      result = await client.query(q0, [brand, wifi, ac, toilet, rows, columns, layout, companyId, vehicleId]);
 
       if(result == null || result.rows == null) {
         throw "Vehicles update did not return any result";
