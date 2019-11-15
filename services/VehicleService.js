@@ -117,7 +117,7 @@ const VehicleService = {
       client.release()
     }
   },
-  insertOne: async (brand, wifi, ac, rows, columns, companyId) => {
+  insertOne: async (brand, wifi, ac, toilet, rows, columns, companyId) => {
     if(isNaN(companyId)) {
       throw "Invalid company id"
     }
