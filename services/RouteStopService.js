@@ -20,12 +20,15 @@ const RouteStopService = {
         route_stops.id as id, \
         routes.id as route_id, \
         route_stops.position as position, \
+        route_stops.departure_day as departure_day, \
+        route_stops.departure_hour as departure_hour, \
+        route_stops.departure_minute as departure_minute, \
         stops.name as stop_name \
         from route_stops \
         left join routes on routes.id = route_stops.route_id \
         left join stops on stops.id = route_stops.stop_id \
         where routes.company_id = $1 and routes.deleted = $2 \
-        order by position`;
+        order by route_id, position`;
 
       result = await client.query(q0, [companyId, deleted]);
 
@@ -61,6 +64,9 @@ const RouteStopService = {
         routes.id as route_id, \
         route_stops.position as position, \
         companies.name as company_name, \
+        route_stops.departure_day as departure_day, \
+        route_stops.departure_hour as departure_hour, \
+        route_stops.departure_minute as departure_minute, \
         stops.name as stop_name \
         from route_stops \
         left join routes on routes.id = route_stops.route_id \

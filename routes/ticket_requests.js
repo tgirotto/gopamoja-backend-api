@@ -7,7 +7,6 @@ const UserService = require('../services/UserService');
 const router = new Router()
 
 router.get('/', async function(req, res, next) {
-  console.log(req.cookies);
   if(!req.session.user_id) {
     res.status(401).json({response: 'Not Authorised.'});
     return;

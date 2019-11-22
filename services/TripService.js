@@ -37,6 +37,7 @@ const TripService = {
 
       let q0 = "SELECT trips.id as id, \
         trips.route_id as route_id, \
+        trips.hidden as hidden, \
         trips.days_of_the_week as days_of_the_week \
         FROM trips \
         left join routes on routes.id = trips.route_id \
@@ -154,6 +155,8 @@ const TripService = {
         trips.id as id, \
         trips.days_of_the_week as days_of_the_week, \
         companies.id as company_id, \
+        trips.hidden as hidden, \
+        trips.vehicle_id as vehicle_id, \
         companies.name as company_name \
         from trips \
         left join routes on routes.id = trips.route_id \
@@ -214,6 +217,7 @@ const TripService = {
         resolve(trip);
       });
     } catch(e) {
+      console.log(e);
       await client.query('ROLLBACK')
       throw e;
     } finally {
@@ -265,7 +269,7 @@ const TripService = {
       client.release()
     }
   },
-  updateById: async (tripId, vehicleId, daysOfTheWeek) => {
+  updateById: async (tripId, vehicleId, daysOfTheWeek, hidden) => {
     if(isNaN(vehicleId)) {
       throw "Vehicle id not valid"
     }
@@ -278,15 +282,19 @@ const TripService = {
       throw 'days of the week are not an array';
     }
 
+    if(typeof hidden !== 'boolean') {
+      throw 'hidden invalid';
+    }
+
     const client = await pg.connect()
     let result;
 
     try {
       await client.query('BEGIN')
 
-      let q0 = "update trips set vehicle_id = $1, days_of_the_week = $2 where id = $3 returning *";
+      let q0 = "update trips set vehicle_id = $1, days_of_the_week = $2, hidden = $3 where id = $4 returning *";
 
-      result = await client.query(q0, [vehicleId, daysOfTheWeek, tripId]);
+      result = await client.query(q0, [vehicleId, daysOfTheWeek, hidden, tripId]);
 
       if(result == null || result.rows == null) {
         throw "Trips insert did not return any result";

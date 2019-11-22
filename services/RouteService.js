@@ -444,6 +444,146 @@ const RouteService = {
     } finally {
       client.release()
     }
+  },
+  cloneById: async (companyId, routeId) => {
+    if(isNaN(companyId)) {
+      throw "Invalid company id"
+    }
+
+    if(isNaN(routeId)) {
+      throw "Invalid route id"
+    }
+
+    const client = await pg.connect()
+    let result;
+
+    try {
+      await client.query('BEGIN');
+
+      let q0 = "INSERT INTO routes(company_id) VALUES ($1) returning *;"
+
+      result = await client.query(q0, [companyId]);
+
+      if(result == null || result.rows == null) {
+        throw "Route insert did not return any result";
+      }
+
+      if(result.rows.length < 1) {
+        throw "Route insert did not return any result";
+      }
+
+      let route = result.rows[0];
+
+      let q1 = "SELECT * from route_stops where route_id = $1";
+
+      result = await client.query(q1, [routeId]);
+
+      if(result == null || result.rows == null) {
+        throw "Route get did not return any result";
+      }
+
+      if(result.rows.length < 1) {
+        throw "Route not found."
+      }
+
+      let routeStops = result.rows;
+
+      let processedRouteStops = routeStops.map((s) => {
+        return [
+          route.id,
+          s.stop_id,
+          s.position,
+          s.departure_day,
+          s.departure_hour,
+          s.departure_minute
+        ]
+      });
+
+      let q2 = format(`INSERT INTO route_stops(\
+        route_id, \
+        stop_id, \
+        position, \
+        departure_day, \
+        departure_hour, \
+        departure_minute) values %L \
+        returning *`, processedRouteStops);
+
+      console.log(q2);
+      result = await client.query(q2);
+
+      if(result == null || result.rows == null) {
+        throw "Route stops clone did not return any result";
+      }
+
+      if(result.rows.length !== routeStops.length) {
+        throw "Route stop clone did not return any result";
+      }
+
+      let q3 = "SELECT * FROM segments where route_id = $1";
+
+      result = await client.query(q3, [routeId]);
+
+      if(result == null || result.rows == null) {
+        throw "Route stops clone did not return any result";
+      }
+
+      if(result.rows.length < 1) {
+        throw "No segments found"
+      }
+
+      let segments = result.rows;
+
+      let processedSegments = segments.map((s) => {
+        return [
+          route['id'],
+          s.origin_id,
+          s.destination_id,
+          s.departure_day,
+          s.departure_hour,
+          s.departure_minute,
+          s.arrival_day,
+          s.arrival_hour,
+          s.arrival_minute,
+          s.price,
+          s.hidden]
+      });
+
+      let q4 = format(`INSERT INTO segments(\
+        route_id, \
+        origin_id, \
+        destination_id, \
+        departure_day, \
+        departure_hour, \
+        departure_minute, \
+        arrival_day, \
+        arrival_hour, \
+        arrival_minute, \
+        price, \
+        hidden \
+      ) VALUES %L returning *`, processedSegments);
+
+      result = await client.query(q4);
+
+      if(result == null || result.rows == null) {
+        throw "Route segments clone did not return any result";
+      }
+
+      if(result.rows.length !== segments.length) {
+        throw "Route segments clone did not return an expected result";
+      }
+
+      await client.query('COMMIT')
+
+      return new Promise((resolve, reject) => {
+        resolve(route);
+      });
+    } catch(e) {
+      await client.query('ROLLBACK')
+      throw e;
+    } finally {
+      client.release()
+    }
+
   }
 }
 

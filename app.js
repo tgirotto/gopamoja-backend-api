@@ -19,7 +19,10 @@ var insightsRouter = require('./routes/insights');
 var companiesRouter = require('./routes/companies');
 var ticketRequestsRouter = require('./routes/ticket_requests');
 
+console.log(`Running in ${process.env.ENVIRONMENT} environment`);
+
 var app = express();
+
 app.use(cors({origin:['http://localhost:4200', 'https://admin.gopamoja.com', 'https://test.admin.gopamoja.com'], credentials: true}));
 app.use(session({
   store: new pgSession({
@@ -31,6 +34,14 @@ app.use(session({
   cookie: { maxAge: 30 * 24 * 60 * 60 * 1000, domain:'.gopamoja.com', secure: false},
   saveUninitialized: false
 }));
+
+app.use(function(req, res, next) {
+  if(process.env.ENVIRONMENT === 'development') {
+    req.session.user_id = 1;
+  }
+
+  next();
+});
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));

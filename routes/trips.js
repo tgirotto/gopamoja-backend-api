@@ -21,14 +21,12 @@ router.get('/', async function(req, res, next) {
 
   try {
     let user = await UserService.findById(req.session.user_id);
-
     if(user == null || user.role == null) {
       throw "User or user role not defined";
     }
 
     if(user.role === 'admin') {
       const trips = await TripService.findAll();
-
       res.json({
         trips: trips
       });
@@ -131,6 +129,7 @@ router.put('/:id', async function(req, res, next) {
 
   const tripId = parseInt(req.params.id);
   const vehicleId = parseInt(req.body.vehicle_id);
+  const hidden = req.body.hidden;
   const daysOfTheWeek = req.body.days_of_the_week;
 
   if(isNaN(tripId)) {
@@ -148,8 +147,13 @@ router.put('/:id', async function(req, res, next) {
     return;
   }
 
+  if(typeof hidden !== 'boolean') {
+    res.status(500).json({err: 'invalid hidden'});
+    return;
+  }
+
   try {
-    const trip = await TripService.updateById(tripId, vehicleId, daysOfTheWeek);
+    const trip = await TripService.updateById(tripId, vehicleId, daysOfTheWeek, hidden);
     res.json({
       trip: trip
     });

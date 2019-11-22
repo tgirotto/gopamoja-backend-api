@@ -51,6 +51,7 @@ router.get('/', async function(req, res, next) {
       let routes = [];
       let route;
 
+      //start and end of the journey
       for(let rs of routeStops) {
         route = routes.find(x => x.id === rs.route_id);
 
@@ -59,13 +60,29 @@ router.get('/', async function(req, res, next) {
             id: rs.route_id,
             origin_name: rs.stop_name,
             company_name: rs.company_name,
+            departure_day: rs.departure_day,
+            departure_hour: rs.departure_hour,
+            departure_minute: rs.departure_minute,
+            stops: []
           }
 
           routes.push(route);
         }
 
         route['destination_name'] = rs.stop_name;
+        route['arrival_day'] = rs.departure_day;
+        route['arrival_hour'] = rs.departure_hour;
+        route['arrival_minute'] = rs.departure_minute;
       }
+
+      //add stops field to every route
+      routes = routes.map((x) => {
+        x['stops'] = routeStops.filter((y) => {
+          return y['route_id'] === x['id']
+        })
+
+        return x;
+      })
 
       res.json({
         routes: routes
@@ -162,7 +179,7 @@ router.get('/:id', async function(req, res, next) {
   }
 });
 
-router.post('/', async function(req, res, next) {
+router.post('/new', async function(req, res, next) {
   if(!req.session.user_id) {
     res.status(401).json({response: 'Not Authorised.'});
     return;
@@ -190,6 +207,53 @@ router.post('/', async function(req, res, next) {
 
     if(user.role === 'admin') {
       const route = await RouteService.insertOne(companyId, stops);
+      res.json({
+        route: route
+      })
+      return;
+    }
+
+    if(user.role === 'third_party') {
+      let company = await CompanyService.findByUserId(req.session.user_id);
+
+      if(company == null) {
+        throw "This user does not belong to any company";
+      }
+
+      const route = await RouteService.insertOne(company.id, stops);
+      res.json({
+        route: route
+      })
+      return;
+    }
+  } catch(e) {
+    res.status(500).json({e: e.toString()});
+  }
+});
+
+router.post('/clone', async function(req, res, next) {
+  if(!req.session.user_id) {
+    res.status(401).json({response: 'Not Authorised.'});
+    return;
+  }
+
+  const companyId = req.body.company_id;
+  const routeId = req.body.route_id;
+
+  if(isNaN(companyId)) {
+    res.status(500).json({err: 'Company id invalid'});
+    return;
+  }
+
+  try {
+    let user = await UserService.findById(req.session.user_id);
+
+    if(user == null || user.role == null) {
+      throw "User or user role not defined";
+    }
+
+    if(user.role === 'admin') {
+      const route = await RouteService.cloneById(companyId, routeId);
       res.json({
         route: route
       })
