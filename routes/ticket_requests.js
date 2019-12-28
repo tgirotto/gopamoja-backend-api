@@ -2,7 +2,7 @@ const pg = require('../config/pg');
 const Router = require('express-promise-router');
 
 const TicketRequestService = require('../services/TicketRequestService');
-const UserService = require('../services/UserService');
+const ManagerService = require('../services/ManagerService');
 
 const router = new Router()
 
@@ -13,27 +13,32 @@ router.get('/', async function(req, res, next) {
   }
 
   try {
-    let user = await UserService.findById(req.session.user_id);
+    let user = await ManagerService.findById(req.session.user_id);
 
-    if(user == null || user.role == null) {
+    if(user == null || user['access_level'] == null) {
       throw "User or user role not defined";
     }
 
-    if(user.role === 'admin') {
-      const ticketRequests = await TicketRequestService.findAll();
+    let ticketRequests = [];
 
-      res.json({
-        ticket_requests: ticketRequests
-      })
-      return;
+    if(user['access_level'] === 'admin') {
+      ticketRequests = await TicketRequestService.findAll();
+    } else if(user['access_level'] === 'third_party') {
+      let companies = await ManagerService.findCompaniesById(user['id']);
+      let companyIds = companies.map((x) => {return x['id']});
+      ticketRequests = await TicketRequestService.findByCompanyIds(companyIds);
+    } else {
+      throw "invalid access level"
     }
 
-    //if user is a third_party....
+    res.json({
+      ticket_requests: ticketRequests
+    })
   } catch(e) {
+    console.log(e);
     res.status(500).json({e: e.toString()});
   }
 });
-
 
 router.get('/:id', async function(req, res, next) {
   if(!req.session.user_id) {
@@ -41,34 +46,35 @@ router.get('/:id', async function(req, res, next) {
     return;
   }
 
-  const ticketRequestId = parseInt(req.params.id);
-
-  if(isNaN(ticketRequestId)) {
-    res.status(500).json({err: "Invalid ticket request id"});
-    return;
-  }
-
   try {
-    let user = await UserService.findById(req.session.user_id);
+    const ticketRequestId = parseInt(req.params.id);
 
-    if(user == null || user.role == null) {
+    if(isNaN(ticketRequestId)) {
+      res.status(500).json({err: "Invalid ticket request id"});
+      return;
+    }
+
+    let user = await ManagerService.findById(req.session.user_id);
+
+    if(user == null || user['access_level'] == null) {
       throw "User or user role not defined";
     }
 
-    if(user.role === 'admin') {
-      const ticketRequest = await TicketRequestService.findById(ticketRequestId);
-      res.json({
-        ticket_request: ticketRequest
-      });
-      return;
+    const ticketRequest = await TicketRequestService.findById(ticketRequestId);
+
+    if(user['access_level'] === 'third_party') {
+      //actually we should also change the error status
+      let companies = await ManagerService.findCompaniesById(user['id']);
+      let company = companies.find((x) => { return x['id'] === ticketRequest['company_id']})
+
+      if(company == null) {
+        throw "not authorised"
+      }
     }
 
-    if(user.role === 'third_party') {
-      //blah
-      return;
-    }
-
-
+    res.json({
+      ticket_request: ticketRequest
+    });
   } catch(e) {
     res.status(500).json({err: e.toString()});
   }

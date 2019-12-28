@@ -15,6 +15,8 @@ const InsightService = require('../services/InsightService');
 const CompanyService = require('../services/CompanyService');
 const UserService = require('../services/UserService');
 
+const ManagerService = require('../services/ManagerService');
+
 router.get('/', async function(req, res, next) {
   if(!req.session.user_id) {
     res.status(401).json({err: 'Not Authorised.'});
@@ -33,13 +35,16 @@ router.get('/', async function(req, res, next) {
   }
 
   try {
-    let user = await UserService.findById(req.session.user_id);
+    let user = await ManagerService.findById(req.session.user_id);
 
-    if(user == null || user.role == null) {
+    if(user == null || user['access_level'] == null) {
       throw "User or user role not defined";
     }
 
-    if(user.role === 'admin') {
+    let routes = [];
+    let route;
+
+    if(user['access_level'] === 'admin') {
       let routeStops;
 
       if(companyId == null) {
@@ -47,9 +52,6 @@ router.get('/', async function(req, res, next) {
       } else {
         routeStops = await RouteStopService.findByCompanyIdAndDeleted(companyId, false);
       }
-
-      let routes = [];
-      let route;
 
       //start and end of the journey
       for(let rs of routeStops) {
@@ -83,24 +85,14 @@ router.get('/', async function(req, res, next) {
 
         return x;
       })
-
-      res.json({
-        routes: routes
-      });
-      return;
-    }
-
-    if(user.role === 'third_party') {
-      let company = await CompanyService.findByUserId(req.session.user_id);
-
-      if(company == null) {
-        throw "This user does not belong to any company";
+    } else if(user['access_level'] === 'third_party') {
+      let companies = await ManagerService.findCompaniesById(user['id']);
+      if(companies == null || companies.length < 1) {
+        throw "this user does not belong to any company"
       }
 
-      let routeStops = await RouteStopService.findByCompanyIdAndDeleted(company.id, false);
-
-      let routes = [];
-      let route;
+      let companyIds = companies.map((x) => {return x['id']});
+      let routeStops = await RouteStopService.findByCompanyIdsAndDeleted(companyIds, false);
 
       for(let rs of routeStops) {
         route = routes.find(x => x.id === rs.route_id);
@@ -108,7 +100,8 @@ router.get('/', async function(req, res, next) {
         if(route == null) {
           route = {
             id: rs.route_id,
-            origin_name: rs.stop_name
+            origin_name: rs.stop_name,
+            company_name: rs.company_name
           }
 
           routes.push(route);
@@ -116,13 +109,13 @@ router.get('/', async function(req, res, next) {
 
         route['destination_name'] = rs.stop_name;
       }
-
-      res.json({
-        routes: routes
-      });
-      return;
     }
+
+    res.json({
+      routes: routes
+    });
   } catch(e) {
+    console.log(e);
     res.status(500).json({err: e.toString()});
   }
 });

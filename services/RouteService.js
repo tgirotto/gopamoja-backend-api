@@ -508,7 +508,6 @@ const RouteService = {
         departure_minute) values %L \
         returning *`, processedRouteStops);
 
-      console.log(q2);
       result = await client.query(q2);
 
       if(result == null || result.rows == null) {
