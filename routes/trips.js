@@ -12,6 +12,7 @@ const SCHEDULE_DAYS_INTO_THE_FUTURE = 3;
 const RouteStopService = require('../services/RouteStopService');
 const TripService = require('../services/TripService');
 const UserService = require('../services/UserService');
+const ManagerService = require('../services/ManagerService');
 
 router.get('/', async function(req, res, next) {
   if(!req.session.user_id) {
@@ -20,34 +21,35 @@ router.get('/', async function(req, res, next) {
   }
 
   try {
-    let user = await UserService.findById(req.session.user_id);
-    if(user == null || user.role == null) {
+    let user = await ManagerService.findById(req.session.user_id);
+
+    if(user == null || user['access_level'] == null) {
       throw "User or user role not defined";
     }
 
-    if(user.role === 'admin') {
-      const trips = await TripService.findAll();
-      res.json({
-        trips: trips
-      });
-      return;
-    }
+    let trips = [];
+    if(user['access_level'] === 'admin') {
+      trips = await TripService.findAll();
+    } else if(user['access_level'] === 'third_party') {
+      let companies = await ManagerService.findCompaniesById(user['id']);
 
-    if(user.role === 'third_party') {
-      let company = await CompanyService.findByUserId(req.session.user_id);
-
-      if(company == null) {
-        throw "This user does not belong to any company";
+      if(companies == null || companies.length < 1) {
+        throw "this user does not belong to any company"
       }
 
-      const trips = await TripService.findByCompanyId(company.id);
+      let companyIds = companies.map((x) => {return x['id']});
 
-      res.json({
-        trips: trips
-      });
-      return;
+      trips = await TripService.findByCompanyIds(companyIds);
+    } else {
+      throw "User role not found"
     }
+
+    console.log(trips);
+    res.json({
+      trips: trips
+    });
   } catch(e) {
+    console.log(e);
     res.status(500).json({err: e.toString()});
   }
 });

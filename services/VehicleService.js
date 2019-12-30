@@ -40,6 +40,55 @@ const VehicleService = {
       client.release()
     }
   },
+  findByCompanyIdsAndDeleted: async(companyIds, deleted) => {
+    if(!Array.isArray(companyIds)) {
+      throw "Company ids is not an array"
+    }
+
+    if(typeof deleted !== 'boolean') {
+      throw "Invalid deleted"
+    }
+
+    const client = await pg.connect()
+    let result;
+
+    try {
+      await client.query('BEGIN')
+
+      let params = [];
+      for(let i = 2; i < companyIds.length + 2; i++) {
+        params.push('$' + i)
+      }
+
+      let q0 = `select vehicles.id as id, \
+        vehicles.brand as brand, \
+        vehicles.rows * vehicles.columns as capacity, \
+        companies.id as company_id, \
+        companies.name as company_name \
+        from vehicles \
+        left join companies on vehicles.company_id = companies.id \
+        where vehicles.deleted = $1 and company_id in(${params.join(',')})`;
+
+      //probably a bad idea
+      companyIds.unshift(false);
+      result = await client.query(q0, companyIds);
+
+      if(result == null || result.rows == null) {
+        throw "Vehicles get did not return any result";
+      }
+
+      await client.query('COMMIT')
+
+      return new Promise((resolve, reject) => {
+        resolve(result.rows);
+      });
+    } catch(e) {
+      await client.query('ROLLBACK')
+      throw e;
+    } finally {
+      client.release()
+    }
+  },
   findByCompanyIdAndDeleted: async (companyId, deleted) => {
     if(isNaN(companyId)) {
       throw "Invalid company id"

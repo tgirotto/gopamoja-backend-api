@@ -18,6 +18,7 @@ const UserService = require('../services/UserService');
 const ManagerService = require('../services/ManagerService');
 
 router.get('/', async function(req, res, next) {
+  console.log(req.session);
   if(!req.session.user_id) {
     res.status(401).json({err: 'Not Authorised.'});
     return;
@@ -35,6 +36,7 @@ router.get('/', async function(req, res, next) {
   }
 
   try {
+    console.log(req.session);
     let user = await ManagerService.findById(req.session.user_id);
 
     if(user == null || user['access_level'] == null) {
@@ -126,48 +128,41 @@ router.get('/:id', async function(req, res, next) {
     return;
   }
 
-  const routeId = parseInt(req.params.id);
-
-  if(isNaN(routeId)) {
-    res.status(500).json({err: 'Supplied route id is not a number'});
-    return;
-  }
-
   try {
-    let user = await UserService.findById(req.session.user_id);
+    const routeId = parseInt(req.params.id);
 
-    if(user == null || user.role == null) {
+    if(isNaN(routeId)) {
+      res.status(500).json({err: 'Supplied route id is not a number'});
+      return;
+    }
+
+    // let user = await UserService.findById(req.session.user_id);
+    let user = await ManagerService.findById(req.session.user_id);
+
+    if(user == null || user['access_level'] == null) {
       throw "User or user role not defined";
     }
 
-    if(user.role === 'admin') {
-      const route = await RouteService.findById(routeId);
+    const route = await RouteService.findById(routeId);
 
-      res.json({
-        route: route
-      })
-      return;
-    }
-
-    if(user.role === 'third_party') {
-      let company = await CompanyService.findByUserId(req.session.user_id);
-
-      if(company == null) {
-        throw "This user does not belong to any company";
+    if(user['access_level'] === 'third_party') {
+      let companies = await ManagerService.findCompaniesById(user['id']);
+      if(companies == null || companies.length < 1) {
+        throw "this user does not belong to any company"
       }
 
-      const route = await RouteService.findById(routeId);
+      let companyIds = companies.map((x) => {return x['id']});
 
-      if(route.company_id !== company.id) {
-        throw "Forbidden access";
+      if(!companyIds.includes(route['company_id'])) {
+        throw "cannot access this route"
       }
-
-      res.json({
-        route: route
-      })
-      return;
     }
+
+    res.json({
+      route: route
+    })
   } catch(e) {
+    console.log(e);
     res.status(500).json({err: e.toString()});
   }
 });

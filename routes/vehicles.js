@@ -4,6 +4,7 @@ const Router = require('express-promise-router');
 const VehicleService = require('../services/VehicleService');
 const CompanyService = require('../services/CompanyService');
 const UserService = require('../services/UserService');
+const ManagerService = require('../services/ManagerService');
 
 const router = new Router()
 
@@ -25,43 +26,40 @@ router.get('/', async function(req, res, next) {
   }
 
   try {
-    let user = await UserService.findById(req.session.user_id);
+    let user = await ManagerService.findById(req.session.user_id);
 
-    if(user == null || user.role == null) {
+    if(user == null || user['access_level'] == null) {
       throw "User or user role not defined";
     }
 
-    if(user.role === 'admin') {
-      let vehicles;
-
+    let vehicles = [];
+    if(user['access_level'] === 'admin') {
       if(companyId == null) {
         vehicles = await VehicleService.findByDeleted(false);
       } else {
         vehicles = await VehicleService.findByCompanyIdAndDeleted(companyId, false);
       }
+    } else if(user['access_level'] === 'third_party') {
+      let companies = await ManagerService.findCompaniesById(user['id']);
+      let companyIds = companies.map((x) => {return x['id']});
 
-      res.json({
-        vehicles: vehicles
-      })
-      return;
-    }
+      if(companyId == null) {
+        vehicles = await VehicleService.findByCompanyIdsAndDeleted(companyIds, false);
+      } else {
+        if(!companyIds.includes(companyId)) {
+          throw "user does not have access to that company's data"
+        }
 
-    if(user.role === 'third_party') {
-      let company = await CompanyService.findByUserId(req.session.user_id);
-
-      if(company == null) {
-        throw "This user does not belong to any company";
+        vehicles = await VehicleService.findByCompanyIdAndDeleted(companyId, false);
       }
-
-      let vehicles = await VehicleService.findByCompanyIdAndDeleted(companyId, false);
-
-      res.json({
-        vehicles: vehicles
-      })
-      return;
+    } else {
+      throw "user access level not found"
     }
+
+    res.json({
+      vehicles: vehicles
+    })
   } catch(e) {
-    console.log(e);
     res.status(500).json({err: e.toString()});
   }
 });
@@ -75,7 +73,23 @@ router.get('/:id', async function(req, res, next) {
   }
 
   try {
+    let user = await ManagerService.findById(req.session.user_id);
+
+    if(user == null || user['access_level'] == null) {
+      throw "User or user role not defined";
+    }
+
     const vehicle = await VehicleService.findById(vehicleId);
+
+    if(user['access_level'] == 'third_party') {
+      let companies = await ManagerService.findCompaniesById(user['id']);
+      let companyIds = companies.map((x) => {return x['id']});
+
+      if(!companyIds.includes(vehicle['company_id'])) {
+        throw "user does not have access to that company's data"
+      }
+    }
+
     res.json({
       vehicle: vehicle
     })

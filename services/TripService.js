@@ -140,6 +140,79 @@ const TripService = {
       client.release()
     }
   },
+  findByCompanyIds: async(companyIds) => {
+    if(!Array.isArray(companyIds)) {
+      throw "Company ids not valid"
+    }
+
+    const client = await pg.connect()
+    let result;
+
+    try {
+      await client.query('BEGIN')
+
+      let params = [];
+      for(let i = 1; i <= companyIds.length; i++) {
+        params.push('$' + i)
+      }
+
+      let q0 = `select \
+        trips.id as id, \
+        trips.days_of_the_week as days_of_the_week, \
+        routes.id as route_id, \
+        route_stops.position as position, \
+        stops.name as stop_name, \
+        companies.name as company_name, \
+        companies.id as company_id \
+        from trips \
+        left join routes on routes.id = trips.route_id \
+        left join route_stops on route_stops.route_id = routes.id \
+        left join stops on stops.id = route_stops.stop_id \
+        left join companies on companies.id = routes.company_id \
+        where routes.company_id in (${params.join(',')}) \
+        order by position`;
+
+      result = await client.query(q0, companyIds);
+
+      if(result == null || result.rows == null) {
+        throw "Stops get did not return any result";
+      }
+
+      let routeStops = result.rows;
+      // console.log(routeStops.length);
+      let trips = [];
+      let route;
+
+      for(let rs of routeStops) {
+        route = trips.find(x => x.id === rs.id);
+
+        if(route == null) {
+          route = {
+            id: rs.id,
+            date: rs.date,
+            origin_name: rs.stop_name,
+            days_of_the_week: rs.days_of_the_week,
+            company_name: rs.company_name
+          }
+
+          trips.push(route);
+        }
+
+        route['destination_name'] = rs.stop_name;
+      }
+
+      await client.query('COMMIT')
+
+      return new Promise((resolve, reject) => {
+        resolve(trips);
+      });
+    } catch(e) {
+      await client.query('ROLLBACK')
+      throw e;
+    } finally {
+      client.release()
+    }
+  },
   findById: async (tripId) => {
     if(isNaN(tripId)) {
       throw "Trip id is invalid"
