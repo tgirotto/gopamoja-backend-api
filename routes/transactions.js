@@ -1,11 +1,7 @@
 const pg = require('../config/pg');
 const Router = require('express-promise-router');
-const Cursor = require('pg-cursor');
-const { promisify } = require("util");
-const format = require('pg-format');
-const moment = require('moment');
 
-const BookingService = require('../services/BookingService');
+const TransactionService = require('../services/TransactionService');
 
 const router = new Router()
 
@@ -16,9 +12,9 @@ router.get('/', async function(req, res, next) {
   }
 
   try {
-    const bookings = await BookingService.findAll();
+    const transactions = await TransactionService.findAll();
     res.json({
-      bookings: bookings
+      transactions: transactions
     })
   } catch(e) {
     res.status(500).json({e: e.toString()});

@@ -18,7 +18,6 @@ const UserService = require('../services/UserService');
 const ManagerService = require('../services/ManagerService');
 
 router.get('/', async function(req, res, next) {
-  console.log(req.session);
   if(!req.session.user_id) {
     res.status(401).json({err: 'Not Authorised.'});
     return;
@@ -36,7 +35,6 @@ router.get('/', async function(req, res, next) {
   }
 
   try {
-    console.log(req.session);
     let user = await ManagerService.findById(req.session.user_id);
 
     if(user == null || user['access_level'] == null) {

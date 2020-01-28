@@ -18,6 +18,9 @@ var stopsRouter = require('./routes/stops');
 var insightsRouter = require('./routes/insights');
 var companiesRouter = require('./routes/companies');
 var ticketRequestsRouter = require('./routes/ticket_requests');
+var upcomingRouter = require('./routes/upcoming');
+var transactionRouter = require('./routes/transactions');
+var agentRouter = require('./routes/agents');
 
 console.log(`Running in ${process.env.ENVIRONMENT} environment`);
 
@@ -62,6 +65,9 @@ app.use('/stops', stopsRouter);
 app.use('/insights', insightsRouter);
 app.use('/companies', companiesRouter);
 app.use('/ticket_requests', ticketRequestsRouter);
+app.use('/upcoming', upcomingRouter);
+app.use('/transactions', transactionRouter);
+app.use('/agents', agentRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
