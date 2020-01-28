@@ -44,7 +44,6 @@ router.get('/', async function(req, res, next) {
       throw "User role not found"
     }
 
-    console.log(trips);
     res.json({
       trips: trips
     });

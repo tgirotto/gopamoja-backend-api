@@ -5,9 +5,17 @@ const format = require('pg-format');
 const moment = require('moment');
 
 const UpcomingService = {
-  findByLimit: async(limit) => {
-    if(isNaN(limit)) {
-      throw "invalid limit"
+  findByPageAndSizeAndDeleted: async(page, size, deleted) => {
+    if(isNaN(page)) {
+      throw "invalid page"
+    }
+
+    if(isNaN(size)) {
+      throw "invalid size"
+    }
+
+    if(typeof deleted !== 'boolean') {
+      throw "invalid deleted"
     }
 
     const client = await pg.connect()
@@ -15,8 +23,6 @@ const UpcomingService = {
 
     try {
       await client.query('BEGIN')
-
-      const now = moment();
 
       //not very smart, since we are loading all of them to memory before processing. not sustainable
       let q0 = `select \
@@ -36,7 +42,7 @@ const UpcomingService = {
         left join companies on companies.id = routes.company_id \
         where routes.deleted = $1`;
 
-      result = await client.query(q0, [false]);
+      result = await client.query(q0, [deleted]);
 
       if(result == null || result.rows == null) {
         throw "Route stops get did not return any result";
@@ -67,10 +73,11 @@ const UpcomingService = {
         route['arrival_day'] = rs.departure_day;
         route['arrival_hour'] = rs.departure_hour;
         route['arrival_minute'] = rs.departure_minute;
+        route['days_of_the_week'] = rs.days_of_the_week;
       }
 
       //add stops field to every route
-      routes = upcoming.map((x) => {
+      upcoming = upcoming.map((x) => {
         x['stops'] = routeStops.filter((y) => {
           return y['route_id'] === x['id']
         })
@@ -78,10 +85,35 @@ const UpcomingService = {
         return x;
       })
 
+      let now = moment().add(1, 'days')
+      let i = 0;
+
+      let schedule = [], t;
+      while(i < size) {
+        t = {
+          day: moment(now).format("dddd, MMMM Do YYYY"),
+          items: []
+        }
+
+        for(let j = 0; j < upcoming.length && i < size; j++) {
+          if(upcoming[j]['days_of_the_week'] == null) {
+            continue
+          }
+
+          if(upcoming[j]['days_of_the_week'].includes(now.day())) {
+            t['items'].push(upcoming[j]);
+            i++
+          }
+        }
+
+        schedule.push(t)
+        now.add(1, 'days')
+      }
+
       await client.query('COMMIT')
 
       return new Promise((resolve, reject) => {
-        resolve(upcoming);
+        resolve(schedule);
       });
     } catch(e) {
       await client.query('ROLLBACK')
@@ -89,8 +121,6 @@ const UpcomingService = {
     } finally {
       client.release()
     }
-
-
   }
 };
 

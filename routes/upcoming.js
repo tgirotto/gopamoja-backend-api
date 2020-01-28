@@ -14,12 +14,23 @@ const UpcomingService = require('../services/UpcomingService');
 const ManagerService = require('../services/ManagerService');
 
 router.get('/', async function(req, res, next) {
+  let page = parseInt(req.query.page);
+  let size = parseInt(req.query.size);
+
   if(!req.session.user_id) {
     res.status(401).json({response: 'Not Authorised.'});
     return;
   }
 
   try {
+    if(isNaN(page)) {
+      throw "page is invalid"
+    }
+
+    if(isNaN(size)) {
+      throw "size is invalid"
+    }
+
     let user = await ManagerService.findById(req.session.user_id);
 
     if(user == null || user['access_level'] == null) {
@@ -28,7 +39,7 @@ router.get('/', async function(req, res, next) {
 
     let upcoming = [];
     if(user['access_level'] === 'admin') {
-      upcoming = await UpcomingService.findByLimit(50);
+      upcoming = await UpcomingService.findByPageAndSizeAndDeleted(page, size, false);
     } else if(user['access_level'] === 'third_party') {
       let companies = await ManagerService.findCompaniesById(user['id']);
 
