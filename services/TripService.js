@@ -69,7 +69,6 @@ const TripService = {
         resolve(trips);
       });
     } catch(e) {
-      console.log(e);
       await client.query('ROLLBACK')
       throw e;
     } finally {
@@ -230,9 +229,11 @@ const TripService = {
         companies.id as company_id, \
         trips.hidden as hidden, \
         trips.vehicle_id as vehicle_id, \
+        vehicles.layout as layout, \
         companies.name as company_name \
         from trips \
         left join routes on routes.id = trips.route_id \
+        left join vehicles on trips.vehicle_id = vehicles.id \
         left join companies on companies.id = routes.company_id \
         where trips.id = $1";
 

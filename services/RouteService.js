@@ -98,6 +98,50 @@ const RouteService = {
       client.release()
     }
   },
+  findStopsById: async(routeId) => {
+    if(isNaN(routeId)) {
+      throw "Invalid route id"
+    }
+
+    const client = await pg.connect()
+    let result;
+
+    try {
+      let q0 = `select \
+        route_stops.id as id, \
+        route_stops.stop_id as stop_id, \
+        routes.id as route_id, \
+        route_stops.position as position, \
+        route_stops.departure_day as departure_day, \
+        route_stops.departure_hour as departure_hour, \
+        route_stops.departure_minute as departure_minute, \
+        stops.name as stop_name \
+        from route_stops \
+        left join routes on routes.id = route_stops.route_id \
+        left join stops on stops.id = route_stops.stop_id \
+        where routes.id = $1 and route_stops.deleted = $2 \
+        order by position`;
+
+      result = await client.query(q0, [routeId, false]);
+
+      if(result == null || result.rows == null) {
+        throw "Stops get did not return any result";
+      }
+
+      let stops = result.rows;
+
+      await client.query('COMMIT')
+
+      return new Promise((resolve, reject) => {
+        resolve(stops);
+      });
+    } catch(e) {
+      await client.query('ROLLBACK')
+      throw e;
+    } finally {
+      client.release()
+    }
+  },
   insertOne: async(companyId, stops) => {
     if(isNaN(companyId)) {
       throw "Company id invalid"

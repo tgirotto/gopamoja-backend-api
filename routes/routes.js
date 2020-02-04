@@ -115,7 +115,20 @@ router.get('/', async function(req, res, next) {
       routes: routes
     });
   } catch(e) {
-    console.log(e);
+    res.status(500).json({err: e.toString()});
+  }
+});
+
+router.get('/:id/stops', async function(req, res, next) {
+  let routeId = parseInt(req.params.id);
+
+  try {
+    let stops = await RouteService.findStopsById(routeId);
+
+    res.json({
+      stops: stops
+    });
+  } catch(e) {
     res.status(500).json({err: e.toString()});
   }
 });

@@ -29,6 +29,7 @@ const UpcomingService = {
         route_stops.id as id, \
         routes.id as route_id, \
         route_stops.position as position, \
+        trips.id as trip_id, \
         companies.name as company_name, \
         route_stops.departure_day as departure_day, \
         route_stops.departure_hour as departure_hour, \
@@ -58,6 +59,7 @@ const UpcomingService = {
         if(route == null) {
           route = {
             id: rs.route_id,
+            trip_id: rs.trip_id,
             origin_name: rs.stop_name,
             company_name: rs.company_name,
             departure_day: rs.departure_day,
@@ -88,10 +90,11 @@ const UpcomingService = {
       let now = moment().add(1, 'days')
       let i = 0;
 
-      let schedule = [], t;
+      let schedule = [], t, d;
       while(i < size) {
         t = {
-          day: moment(now).format("dddd, MMMM Do YYYY"),
+          date: moment(now).startOf('day'),
+          formatted_date: moment(now).startOf('day').format("dddd, MMMM Do YYYY"),
           items: []
         }
 
