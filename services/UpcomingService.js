@@ -41,7 +41,8 @@ const UpcomingService = {
         left join trips on trips.route_id = routes.id \
         left join stops on stops.id = route_stops.stop_id \
         left join companies on companies.id = routes.company_id \
-        where routes.deleted = $1`;
+        where routes.deleted = $1 \
+        order by route_stops.position asc`;
 
       result = await client.query(q0, [deleted]);
 
