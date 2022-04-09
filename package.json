@@ -17,7 +17,7 @@
     "express-session": "^1.17.0",
     "express-xml-bodyparser": "^0.3.0",
     "http-errors": "~1.6.3",
-    "moment": "^2.24.0",
+    "moment": "^2.29.2",
     "morgan": "~1.9.1",
     "pg": "^7.12.1",
     "pg-cursor": "^2.0.0",
